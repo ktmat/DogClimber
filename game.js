@@ -16,14 +16,16 @@ function preload() {
     gameData = loadJSON("gameElements.json", initialiseGame);
     gameLogo = loadImage("assets/sprites/logo.png");
     brickImage = loadImage("assets/sprites/brick.png");
+    
 }
 
 function setup() {
     createCanvas(1000, 500);
     CURRENTSCREEN = "MAINMENU";
     startGameButton = createButton("Start Game");
-    startGameButton.position(width / 2, height / 2 + 100);
+    startGameButton.position(width / 2, height / 2 + 500);
     startGameButton.mouseClicked(loadLevelOne);
+    gameSplash = image(gameLogo, 100, 100);
     world.gravity.y = 5;
 }
 
@@ -79,7 +81,31 @@ function loadLevelOne() {
 }
 
 function loadLevelTwo() {
+    background('black');
+    CURRENTSCREEN = "LEVEL2";
+    startGameButton.hide();
+    if (!isLevel2Init) {
+        player = new Sprite(500, 750);  
+        player.diameter = 35;
+        bricks = [];
+        for (let i = 0; i < gameData.platformsLevel2.length; i++) {
+            platformData = gameData.platformsLevel2[i];
 
+            let numberOfBricks = 50;
+            let brickWidth = 1000 / numberOfBricks;
+            let brickHeight = 20;
+
+            for (let j = 0; j < numberOfBricks; j++) {
+                let brickX = (platformData.x / 2) + (j * brickWidth);
+                let brickY = platformData.y;
+                let brick = new Sprite(brickX, brickY, brickWidth, brickHeight, 'static');
+                brick.addImage(brickImage);
+                bricks.push(brick);
+            }
+        }
+
+        isLevel2Init = true;
+    }
 }
 
 function loadMainMenu() {
