@@ -1,5 +1,6 @@
 let gameData, player, gameLogo, CURRENTSCREEN, startGameButton, gameSplash,
-brickImage, lives, prevScreen, livesImage, initialBrick, initialEnemy;
+brickImage, lives, prevScreen, livesImage, initialBrick, initialEnemy, leftWall, rightWall;
+let canMove;
 let platforms = [];
 let bricks = [];
 let isLevel1Init = false;
@@ -9,6 +10,7 @@ let enemies = [];
 let enemyLocations = [];
 let initialBricks = [];
 let initialEnemies = [];
+let playerSpriteImage;
 
 function preload() {
     gameData = loadJSON("gameElements.json");
@@ -16,6 +18,7 @@ function preload() {
     brickImage = loadImage("assets/sprites/brick.png");
     brickUnbreak = loadImage("assets/sprites/brickUnbreak1.png");
     livesImage = loadImage("assets/sprites/life.png");
+    playerSpriteImage = loadImage("assets/sprites/dogsprite1.png");
 }
 
 function setup() {
@@ -29,10 +32,12 @@ function setup() {
 }
 
 function draw() {
+    allSprites.pixelPerfect = true;
     if (CURRENTSCREEN == "MAINMENU") {
         loadMainMenu();
     } else if (CURRENTSCREEN == "LEVEL1") {
         loadLevelOne();
+        enemyMovement();
         console.log(lives);
         handleInput();
         camera.y = player.y;
@@ -55,6 +60,8 @@ function draw() {
             for (let i = 0; i < enemies.length; i++) {
                 enemies[i].remove();
             }
+            leftWall.remove();
+            rightWall.remove();
             player.remove();
             initialEnemies = [];
             enemies = [];
@@ -99,8 +106,18 @@ function loadLevelOne() {
     startGameButton.hide();
     if (!isLevel1Init) {
         lives = 3;
-        player = new Sprite(500, 750);  
-        player.diameter = 35;
+        player = new Sprite(500, 750, 32, 25);  
+        player.spriteSheet = playerSpriteImage;
+        player.anis.offset.x = 1;
+        player.debug = true;
+        player.addAnis({
+            idle: {row: 1, frames: 1},
+            run: {row: 1, frames: 6},
+            jump: {row: 2, frames: 5}
+        });
+        player.rotationLock = true;
+        player.changeAni('idle');
+        // player.diameter = 35;
         player.isJumping = false;
         bricks = [];
         for (let i = 0; i < gameData.platformsLevel1.length; i++) {
@@ -129,10 +146,16 @@ function loadLevelOne() {
             let enemyData = gameData.level1Enemies[i];
 
             enemy = new Sprite(enemyData.x, enemyData.y, 'dynamic');
+            //enemy.vel.x = 1;
+            enemy.moveValue = 1;
             initialEnemy = enemy;
             enemies.push(enemy);
             initialEnemies.push(initialEnemy);
         }
+        leftWall = new Sprite(245, height / 2, 10, height + 620, 'static');
+        leftWall.color = "grey";
+        rightWall = new Sprite(width, height / 2, 20, height + 620, 'static');
+        rightWall.color = "grey";
         isLevel1Init = true;
     }
 }
@@ -178,14 +201,20 @@ function loadMainMenu() {
 
 function handleInput() {
     if (keyIsDown(LEFT_ARROW)) {
-		player.vel.x = -2.5
+		player.position.x += -2.5
+        player.changeAni('run');
+        player.mirror.x = true;
 	} else if (keyIsDown(RIGHT_ARROW)) {
-		player.vel.x = 2.5;
+		player.position.x += 2.5;
+        player.changeAni('run');
+        player.mirror.x = false;
 	} else if (kb.pressed(UP_ARROW) && !player.isJumping) {
         player.vel.y = -5;
         player.isJumping = true;
+        player.changeAni('jump');
     } else {
 		player.vel.x = 0;
+        player.changeAni('idle');
 	}
 }
 
@@ -217,12 +246,41 @@ function resetLevel() {
             bricks[i].addImage(brickImage);
         }
     }
+    leftWall.remove();
+    rightWall.remove();
+    leftWall = new Sprite(245, height / 2, 10, height + 620, 'static');
+    leftWall.color = "grey";
+    rightWall = new Sprite(width, height / 2, 20, height + 620, 'static');
+    rightWall.color = "grey";
 
     for (let i = 0; i < enemies.length; i++) {
         enemies[i].remove();
-        enemies[i] = new Sprite(initialEnemies[i].x, initialEnemies[i].y); 
+        enemies[i] = new Sprite(initialEnemies[i].x, initialEnemies[i].y);
+        enemies[i].moveValue = 1; 
     }
     lives = lives - 1;
     player.position.x = 500;
     player.position.y = 750;
+}
+
+function deathScreen() {
+    background(color('red'));
+}
+
+function enemyMovement() {
+    for (let i = 0; i < enemies.length; i++) {
+        let canMove = true;
+        if (enemies[i].collide(rightWall)) {
+            enemies[i].moveValue = -1;
+            canMove = false;
+        } else if (enemies[i].collide(leftWall)) {
+            enemies[i].moveValue = 1;
+            canMove = false;
+        }
+
+        // Only update position if canMove is true
+        if (canMove) {
+            enemies[i].position.x += enemies[i].moveValue;
+        }
+    }
 }
