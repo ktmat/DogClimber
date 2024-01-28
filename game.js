@@ -11,6 +11,7 @@ let enemyLocations = [];
 let initialBricks = [];
 let initialEnemies = [];
 let playerSpriteImage;
+let dogBone;
 
 function preload() {
     gameData = loadJSON("gameElements.json");
@@ -19,6 +20,7 @@ function preload() {
     brickUnbreak = loadImage("assets/sprites/brickUnbreak1.png");
     livesImage = loadImage("assets/sprites/life.png");
     playerSpriteImage = loadImage("assets/sprites/dogsprite1.png");
+    dogBone = loadImage("assets/sprites/bone.png");
 }
 
 function setup() {
@@ -42,17 +44,6 @@ function draw() {
         handleInput();
         camera.y = player.y;
         collisionCheck();
-        if (player.position.y <= -900) {
-            for (let i = 0; i < enemies.length; i++) {
-                enemies[i].remove();
-            }
-            for (let i = 0; i < bricks.length; i++) {
-                bricks[i].remove();
-                player.remove();
-                prevScreen = "LEVEL1";
-                CURRENTSCREEN = "SCOREBOARD";
-            }
-        }
         if (lives == 0) {
             for (let i = 0; i < bricks.length; i++) {
                 bricks[i].remove();
@@ -96,6 +87,20 @@ function collisionCheck() {
     for (let i = 0; i < enemies.length; i++) {
         if (player.collide(enemies[i])) {
             resetLevel();
+        }
+    }
+    if (player.collide(dogBoneSprite)) {
+        for (let i = 0; i < enemies.length; i++) {
+            enemies[i].remove();
+        }
+        for (let i = 0; i < bricks.length; i++) {
+            bricks[i].remove();
+            player.remove();
+            dogBoneSprite.remove();
+            leftWall.remove();
+            rightWall.remove();
+            prevScreen = "LEVEL1";
+            CURRENTSCREEN = "SCOREBOARD";
         }
     }
 }
@@ -156,6 +161,9 @@ function loadLevelOne() {
         leftWall.color = "grey";
         rightWall = new Sprite(width, height / 2, 20, height + 620, 'static');
         rightWall.color = "grey";
+        dogBoneSprite = new Sprite(500, -20, 'static');
+        dogBoneSprite.addImage(dogBone);
+        dogBoneSprite.scale = 1;
         isLevel1Init = true;
     }
 }
