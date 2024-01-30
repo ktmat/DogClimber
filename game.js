@@ -15,6 +15,9 @@ let dogBone;
 let canAttack;
 let poop;
 let poops = [];
+let creditTimer = 0;
+let level2Timer = 0;
+let endLevel2Timer = 0;
 
 function preload() {
     gameData = loadJSON("gameElements.json");
@@ -28,48 +31,39 @@ function preload() {
 }
 
 function setup() {
+    isButtonInit = false;
     createCanvas(1000, 500);
     CURRENTSCREEN = "MAINMENU";
     startGameButton = createButton("Start Game");
     startGameButton.position(width / 2, height / 2 + 500);
-    startGameButton.mouseClicked(loadLevelOne);
+    startGameButton.mouseClicked(changeCurrentScreenToLevelOne);
     gameSplash = image(gameLogo, 100, 100);
     world.gravity.y = 5;
 }
 
 function draw() {
-    allSprites.pixelPerfect = true;
+    console.log(CURRENTSCREEN);
     if (CURRENTSCREEN == "MAINMENU") {
         loadMainMenu();
     } else if (CURRENTSCREEN == "LEVEL1") {
         loadLevelOne();
         enemyMovement();
-        console.log(lives);
+        //console.log(lives);
         handleInput();
         camera.y = player.y;
         collisionCheck();
-        if (lives == 0) {
-            for (let i = 0; i < bricks.length; i++) {
-                bricks[i].remove();
-            }
-            for (let i = 0; i < enemies.length; i++) {
-                enemies[i].remove();
-            }
-            leftWall.remove();
-            rightWall.remove();
-            player.remove();
-            initialEnemies = [];
-            enemies = [];
-            poops = [];
-            CURRENTSCREEN = "MAINMENU";
-        }
+        checkLives();
     } else if (CURRENTSCREEN == "LEVEL2") {
         loadLevelTwo();
+        enemyMovement();
         handleInput();
         camera.y = player.y;
         collisionCheck();
+        checkLives();
     } else if (CURRENTSCREEN == "SCOREBOARD") {
         scoreboardScreen();
+    } else if (CURRENTSCREEN == "CREDITS") {
+        credits();
     }
 }
 
@@ -94,7 +88,7 @@ function collisionCheck() {
             resetLevel();
         }
     }
-    if (player.collide(dogBoneSprite)) {
+    if (player.collide(dogBoneSprite) && CURRENTSCREEN == "LEVEL1") {
         for (let i = 0; i < enemies.length; i++) {
             enemies[i].remove();
         }
@@ -105,6 +99,20 @@ function collisionCheck() {
             leftWall.remove();
             rightWall.remove();
             prevScreen = "LEVEL1";
+            CURRENTSCREEN = "SCOREBOARD";
+        }
+    }
+    if (player.collide(dogBoneSprite) && CURRENTSCREEN == "LEVEL2") {
+        for (let i = 0; i < enemies.length; i++) {
+            enemies[i].remove();
+        }
+        for (let i = 0; i < bricks.length; i++) {
+            bricks[i].remove();
+            player.remove();
+            dogBoneSprite.remove();
+            leftWall.remove();
+            rightWall.remove();
+            prevScreen = "LEVEL2";
             CURRENTSCREEN = "SCOREBOARD";
         }
     }
@@ -119,8 +127,9 @@ function collisionCheck() {
 }
 
 function loadLevelOne() {
-    background('black');
+    background('grey');
     CURRENTSCREEN = "LEVEL1";
+    prevScreen = "LEVEL1";
     startGameButton.hide();
     if (!isLevel1Init) {
         lives = 3;
@@ -168,7 +177,7 @@ function loadLevelOne() {
             //enemy.scale = 1;
             enemy.anis.offset.x = 1;
             enemy.debug = true;
-            //enemy.scale = 1.5;
+            enemy.scale = 1;
             enemy.addAnis({
                 walk: {row: 3, frames: 4}
             });
@@ -180,7 +189,7 @@ function loadLevelOne() {
             enemies.push(enemy);
             initialEnemies.push(initialEnemy);
         }
-        leftWall = new Sprite(245, height / 2, 10, height + 620, 'static');
+        leftWall = new Sprite(5, height / 2, 10, height + 620, 'static');
         leftWall.color = "grey";
         rightWall = new Sprite(width, height / 2, 20, height + 620, 'static');
         rightWall.color = "grey";
@@ -192,11 +201,25 @@ function loadLevelOne() {
 }
 
 function loadLevelTwo() {
-    background('black');
+    background('grey');
     CURRENTSCREEN = "LEVEL2";
+    prevScreen = "LEVEL2";
+   // startGameButton.hide();
     if (!isLevel2Init) {
-        player = new Sprite(500, 750);  
-        player.diameter = 35;
+        lives = 3;
+        player = new Sprite(500, 750, 32, 25);  
+        player.spriteSheet = playerSpriteImage;
+        player.anis.offset.x = 1;
+        player.debug = true;
+        player.addAnis({
+            idle: {row: 1, frames: 1},
+            run: {row: 1, frames: 6},
+            jump: {row: 2, frames: 5}
+        });
+        player.rotationLock = true;
+        player.changeAni('idle');
+        // player.diameter = 35;
+        player.isJumping = false;
         bricks = [];
         for (let i = 0; i < gameData.platformsLevel2.length; i++) {
             platformData = gameData.platformsLevel2[i];
@@ -209,15 +232,44 @@ function loadLevelTwo() {
                 let brickX = (platformData.x / 2) + (j * brickWidth);
                 let brickY = platformData.y;
                 let brick = createBrick(brickX, brickY, brickWidth, brickHeight, Math.floor(Math.random() * (2 - 1 + 1)) + 1);
+                //initialBrick = brick;
                 if (brick.isUnbreakable == 1) {
                     brick.addImage(brickUnbreak);
                 } else {
                     brick.addImage(brickImage);
                 }
+               // brick.addImage(brickImage);
                 bricks.push(brick);
+                //initialBricks.push(initialBrick);
             }
         }
+        for (let i = 0; i < gameData.level2Enemies.length; i++) {
+            let enemyData = gameData.level2Enemies[i];
 
+            enemy = new Sprite(enemyData.x, enemyData.y, 80, 40, 'dynamic');
+            enemy.spriteSheet = snakeImage;
+            //enemy.scale = 1;
+            enemy.anis.offset.x = 1;
+            enemy.debug = true;
+            enemy.scale = 1;
+            enemy.addAnis({
+                walk: {row: 3, frames: 4}
+            });
+            enemy.changeAni('walk');
+            enemy.rotationLock = true;
+            //enemy.vel.x = 1;
+            enemy.moveValue = 1;
+            initialEnemy = enemy;
+            enemies.push(enemy);
+            initialEnemies.push(initialEnemy);
+        }
+        leftWall = new Sprite(5, height / 2, 10, height + 620, 'static');
+        leftWall.color = "grey";
+        rightWall = new Sprite(width, height / 2, 20, height + 620, 'static');
+        rightWall.color = "grey";
+        dogBoneSprite = new Sprite(500, -20, 'static');
+        dogBoneSprite.addImage(dogBone);
+        dogBoneSprite.scale = 1;
         isLevel2Init = true;
     }
 }
@@ -225,6 +277,9 @@ function loadLevelTwo() {
 function loadMainMenu() {
     isLevel1Init = false;
     isLevel2Init = false;
+    level2Timer = 0;
+    endLevel2Timer = 0;
+    creditTimer = 0;
     startGameButton.show();
     startGameButton.mouseClicked(loadLevelOne);
     gameSplash = image(gameLogo, 100, 100);
@@ -263,9 +318,23 @@ function createBrick(x, y, width, height, isUnbreakable) {
 
 function scoreboardScreen() {
     if (prevScreen == "LEVEL1") {
-
-    } else if (prevScreen == "LEVEL2") {
-
+        level2Timer += 0.25;
+        background('black');
+        fill(color('white'));
+        text("You beat Level 1, Here is Level 2!", width / 2, height / 2);
+        if (level2Timer >= 50) {
+            CURRENTSCREEN = "LEVEL2";
+        }
+    }
+    else {
+        endLevel2Timer += 0.25;
+        background('black');
+        fill(color('white'));
+        text("You beat Level 2!", width / 2, height / 2);
+        if (endLevel2Timer >= 50) {
+            CURRENTSCREEN = "CREDITS";
+        }
+        //console.log("SCOREBOARD AFTER LEVEL2");
     }
 }
 
@@ -284,7 +353,7 @@ function resetLevel() {
     }
     leftWall.remove();
     rightWall.remove();
-    leftWall = new Sprite(245, height / 2, 10, height + 620, 'static');
+    leftWall = new Sprite(0, height / 2, 10, height + 620, 'static');
     leftWall.color = "grey";
     rightWall = new Sprite(width, height / 2, 20, height + 620, 'static');
     rightWall.color = "grey";
@@ -305,10 +374,6 @@ function resetLevel() {
     lives = lives - 1;
     player.position.x = 500;
     player.position.y = 750;
-}
-
-function deathScreen() {
-    background(color('red'));
 }
 
 function enemyMovement() {
@@ -338,4 +403,41 @@ function makePoop() {
     poop.color = color(123, 63, 0);
     poops.push(poop);
     canAttack = false;
+}
+
+function credits() {
+    creditTimer += 0.25;
+    background('black');
+    fill(color('white'));
+    text("Game made by Kai Matolat", width / 2, height / 2);
+    if (creditTimer >= 50) {
+        CURRENTSCREEN = "MAINMENU";
+    }
+}
+
+function checkLives() {
+    if (lives == 0) {
+        for (let i = 0; i < bricks.length; i++) {
+            bricks[i].remove();
+        }
+        for (let i = 0; i < enemies.length; i++) {
+            enemies[i].remove();
+        }
+        leftWall.remove();
+        rightWall.remove();
+        player.remove();
+        initialEnemies = [];
+        enemies = [];
+        poops = [];
+        background('black');
+        CURRENTSCREEN = "MAINMENU";
+    }
+}
+
+function changeCurrentScreenToLevelOne() {
+    CURRENTSCREEN = "LEVEL1";
+}
+
+function changeCurrentScreenToLevelTwo() {
+    CURRENTSCREEN = "LEVEL2";
 }
