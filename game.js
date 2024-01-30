@@ -10,8 +10,11 @@ let enemies = [];
 let enemyLocations = [];
 let initialBricks = [];
 let initialEnemies = [];
-let playerSpriteImage;
+let playerSpriteImage, snakeImage;
 let dogBone;
+let canAttack;
+let poop;
+let poops = [];
 
 function preload() {
     gameData = loadJSON("gameElements.json");
@@ -21,6 +24,7 @@ function preload() {
     livesImage = loadImage("assets/sprites/life.png");
     playerSpriteImage = loadImage("assets/sprites/dogsprite1.png");
     dogBone = loadImage("assets/sprites/bone.png");
+    snakeImage = loadImage("assets/sprites/snake1.png");
 }
 
 function setup() {
@@ -56,6 +60,7 @@ function draw() {
             player.remove();
             initialEnemies = [];
             enemies = [];
+            poops = [];
             CURRENTSCREEN = "MAINMENU";
         }
     } else if (CURRENTSCREEN == "LEVEL2") {
@@ -101,6 +106,14 @@ function collisionCheck() {
             rightWall.remove();
             prevScreen = "LEVEL1";
             CURRENTSCREEN = "SCOREBOARD";
+        }
+    }
+    for (let i = 0; i < enemies.length; i++) {
+        for (let j = 0; j < poops.length; j++) {
+            if (enemies[i].collide(poops[j])) {
+                enemies[i].remove();
+                poops[j].remove();
+            }
         }
     }
 }
@@ -150,7 +163,17 @@ function loadLevelOne() {
         for (let i = 0; i < gameData.level1Enemies.length; i++) {
             let enemyData = gameData.level1Enemies[i];
 
-            enemy = new Sprite(enemyData.x, enemyData.y, 'dynamic');
+            enemy = new Sprite(enemyData.x, enemyData.y, 80, 40, 'dynamic');
+            enemy.spriteSheet = snakeImage;
+            //enemy.scale = 1;
+            enemy.anis.offset.x = 1;
+            enemy.debug = true;
+            //enemy.scale = 1.5;
+            enemy.addAnis({
+                walk: {row: 3, frames: 4}
+            });
+            enemy.changeAni('walk');
+            enemy.rotationLock = true;
             //enemy.vel.x = 1;
             enemy.moveValue = 1;
             initialEnemy = enemy;
@@ -212,7 +235,9 @@ function handleInput() {
 		player.position.x += -2.5
         player.changeAni('run');
         player.mirror.x = true;
-	} else if (keyIsDown(RIGHT_ARROW)) {
+	} else if (kb.pressed(' ') && canAttack) {
+        makePoop();
+    } else if (keyIsDown(RIGHT_ARROW)) {
 		player.position.x += 2.5;
         player.changeAni('run');
         player.mirror.x = false;
@@ -227,7 +252,7 @@ function handleInput() {
 }
 
 function createBrick(x, y, width, height, isUnbreakable) {
-    let brick = createSprite(x, y, width, height, 'static');
+    let brick = new Sprite(x, y, width, height, 'static');
     brick.isUnbreakable = isUnbreakable;
     brick.initialX = x;
     brick.initialY = y;
@@ -254,6 +279,9 @@ function resetLevel() {
             bricks[i].addImage(brickImage);
         }
     }
+    for (let j = 0; j < poops.length; j++) {
+        poops[j].remove();
+    }
     leftWall.remove();
     rightWall.remove();
     leftWall = new Sprite(245, height / 2, 10, height + 620, 'static');
@@ -263,8 +291,16 @@ function resetLevel() {
 
     for (let i = 0; i < enemies.length; i++) {
         enemies[i].remove();
-        enemies[i] = new Sprite(initialEnemies[i].x, initialEnemies[i].y);
-        enemies[i].moveValue = 1; 
+        enemies[i] = new Sprite(initialEnemies[i].x, initialEnemies[i].y, 80, 40, 'dynamic');
+        enemies[i].spriteSheet = snakeImage;
+        enemies[i].anis.offset.x = 1;
+        enemies[i].debug = true;
+        enemies[i].addAnis({
+            walk: {row: 3, frames: 4}
+        });
+        enemies[i].changeAni('walk');
+        enemies[i].rotationLock = true;
+        enemies[i].moveValue = 1;
     }
     lives = lives - 1;
     player.position.x = 500;
@@ -279,16 +315,27 @@ function enemyMovement() {
     for (let i = 0; i < enemies.length; i++) {
         let canMove = true;
         if (enemies[i].collide(rightWall)) {
+            enemies[i].mirror.x = true;
             enemies[i].moveValue = -1;
             canMove = false;
         } else if (enemies[i].collide(leftWall)) {
+            enemies[i].mirror.x = false;
             enemies[i].moveValue = 1;
             canMove = false;
         }
 
-        // Only update position if canMove is true
+        // only update position if canMove is true
         if (canMove) {
+            //enemies[i].changeAni('walk');
             enemies[i].position.x += enemies[i].moveValue;
         }
     }
+}
+
+function makePoop() {
+    poop = new Sprite(player.position.x, player.position.y);
+    poop.diameter = 15;
+    poop.color = color(123, 63, 0);
+    poops.push(poop);
+    canAttack = false;
 }
