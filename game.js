@@ -18,6 +18,12 @@ let poops = [];
 let creditTimer = 0;
 let level2Timer = 0;
 let endLevel2Timer = 0;
+let jumpSound, eatSound, steakImage;
+let steaks = [];
+let firstBricks = [];
+let initialSteaks = [];
+let initialSteak;
+let deathSound;
 
 function preload() {
     gameData = loadJSON("gameElements.json");
@@ -28,6 +34,11 @@ function preload() {
     playerSpriteImage = loadImage("assets/sprites/dogsprite1.png");
     dogBone = loadImage("assets/sprites/bone.png");
     snakeImage = loadImage("assets/sprites/snake1.png");
+    jumpSound = loadSound("assets/sounds/jump.wav");
+    floorImage = loadImage("assets/sprites/floor2.png");
+    steakImage = loadImage("assets/sprites/steak2.png");
+    eatSound = loadSound("assets/sounds/eat.wav");
+    deathSound = loadSound("assets/sounds/death.wav");
 }
 
 function setup() {
@@ -83,8 +94,14 @@ function collisionCheck() {
             player.isJumping = false;
         }
     }
+    for (let i = 0; i < firstBricks.length; i++) {
+        if (player.collide(firstBricks[i]) && player.position.y <= firstBricks[i].position.y) {
+            player.isJumping = false;
+        }
+    }
     for (let i = 0; i < enemies.length; i++) {
         if (player.collide(enemies[i])) {
+            deathSound.play();
             resetLevel();
         }
     }
@@ -101,6 +118,12 @@ function collisionCheck() {
             prevScreen = "LEVEL1";
             CURRENTSCREEN = "SCOREBOARD";
         }
+        for (let i = 0; i < steaks.length; i++) {
+            steaks[i].remove();
+        }
+        for (let i = 0; i < firstBricks.length; i++) {
+            firstBricks[i].remove();
+        }
     }
     if (player.collide(dogBoneSprite) && CURRENTSCREEN == "LEVEL2") {
         for (let i = 0; i < enemies.length; i++) {
@@ -112,8 +135,22 @@ function collisionCheck() {
             dogBoneSprite.remove();
             leftWall.remove();
             rightWall.remove();
+            steaks.remove();
             prevScreen = "LEVEL2";
             CURRENTSCREEN = "SCOREBOARD";
+        }
+        for (let i = 0; i < steaks.length; i++) {
+            steaks[i].remove();
+        }
+        for (let i = 0; i < firstBricks.length; i++) {
+            firstBricks[i].remove();
+        }
+    }
+    for (let i = 0; i < steaks.length; i++) {
+        if (player.collide(steaks[i])) {
+            eatSound.play();
+            canAttack = true;
+            steaks[i].remove();
         }
     }
     for (let i = 0; i < enemies.length; i++) {
@@ -151,7 +188,7 @@ function loadLevelOne() {
             platformData = gameData.platformsLevel1[i];
 
             let numberOfBricks = 50;
-            let brickWidth = 1000 / numberOfBricks;
+            let brickWidth = width / numberOfBricks;
             let brickHeight = 20;
 
             for (let j = 0; j < numberOfBricks; j++) {
@@ -164,11 +201,27 @@ function loadLevelOne() {
                 } else {
                     brick.addImage(brickImage);
                 }
-               // brick.addImage(brickImage);
                 bricks.push(brick);
-                //initialBricks.push(initialBrick);
             }
         }
+
+        for (let i = 0; i < gameData.firstPlatformLevel1.length; i++) {
+            firstFloor = gameData.firstPlatformLevel1[i];
+
+            let numberOfBricks = 50;
+            let brickWidth = width / numberOfBricks;
+            let brickHeight = 20;
+            for (let j = 0; j < numberOfBricks; j++) {
+                let brickX = (firstFloor.x / 2) + (j * brickWidth);
+                for (let k = 800; k < 2000; k+=20) {
+                    let brickY = k;
+                    let firstFloorBrick = createBrick(brickX, brickY, brickWidth, brickHeight, 2);
+                    firstFloorBrick.addImage(floorImage);
+                    firstBricks.push(firstFloorBrick);
+                }
+            }
+        }
+        
         for (let i = 0; i < gameData.level1Enemies.length; i++) {
             let enemyData = gameData.level1Enemies[i];
 
@@ -189,9 +242,10 @@ function loadLevelOne() {
             enemies.push(enemy);
             initialEnemies.push(initialEnemy);
         }
-        leftWall = new Sprite(5, height / 2, 10, height + 620, 'static');
+        loadSteaksLevel1();
+        leftWall = new Sprite(5, height / 2, 10, height + 1200, 'static');
         leftWall.color = "grey";
-        rightWall = new Sprite(width, height / 2, 20, height + 620, 'static');
+        rightWall = new Sprite(width, height / 2, 20, height + 1200, 'static');
         rightWall.color = "grey";
         dogBoneSprite = new Sprite(500, -20, 'static');
         dogBoneSprite.addImage(dogBone);
@@ -263,9 +317,26 @@ function loadLevelTwo() {
             enemies.push(enemy);
             initialEnemies.push(initialEnemy);
         }
-        leftWall = new Sprite(5, height / 2, 10, height + 620, 'static');
+        for (let i = 0; i < gameData.firstPlatformLevel2.length; i++) {
+            firstFloor = gameData.firstPlatformLevel2[i];
+
+            let numberOfBricks = 50;
+            let brickWidth = width / numberOfBricks;
+            let brickHeight = 20;
+            for (let j = 0; j < numberOfBricks; j++) {
+                let brickX = (firstFloor.x / 2) + (j * brickWidth);
+                for (let k = 800; k < 2000; k+=20) {
+                    let brickY = k;
+                    let firstFloorBrick = createBrick(brickX, brickY, brickWidth, brickHeight, 2);
+                    firstFloorBrick.addImage(floorImage);
+                    firstBricks.push(firstFloorBrick);
+                }
+            }
+        }
+        loadSteaksLevel2();
+        leftWall = new Sprite(5, height / 2, 10, height + 1200, 'static');
         leftWall.color = "grey";
-        rightWall = new Sprite(width, height / 2, 20, height + 620, 'static');
+        rightWall = new Sprite(width, height / 2, 20, height + 1200, 'static');
         rightWall.color = "grey";
         dogBoneSprite = new Sprite(500, -20, 'static');
         dogBoneSprite.addImage(dogBone);
@@ -297,6 +368,9 @@ function handleInput() {
         player.changeAni('run');
         player.mirror.x = false;
 	} else if (kb.pressed(UP_ARROW) && !player.isJumping) {
+        jumpSound.setVolume(0.25);
+        jumpSound.rate(1);
+        jumpSound.play();
         player.vel.y = -5;
         player.isJumping = true;
         player.changeAni('jump');
@@ -348,14 +422,20 @@ function resetLevel() {
             bricks[i].addImage(brickImage);
         }
     }
+    for (let i = 0; i < firstBricks.length; i++) {
+        firstBricks[i].remove();
+        firstBricks[i] = createBrick(firstBricks[i].initialX, firstBricks[i].initialY, firstBricks[i].initialWidth, firstBricks[i].initialHeight, 2);
+        firstBricks[i].addImage(floorImage);
+    }
+
     for (let j = 0; j < poops.length; j++) {
         poops[j].remove();
     }
     leftWall.remove();
     rightWall.remove();
-    leftWall = new Sprite(0, height / 2, 10, height + 620, 'static');
+    leftWall = new Sprite(5, height / 2, 10, height + 1200, 'static');
     leftWall.color = "grey";
-    rightWall = new Sprite(width, height / 2, 20, height + 620, 'static');
+    rightWall = new Sprite(width, height / 2, 20, height + 1200, 'static');
     rightWall.color = "grey";
 
     for (let i = 0; i < enemies.length; i++) {
@@ -370,6 +450,12 @@ function resetLevel() {
         enemies[i].changeAni('walk');
         enemies[i].rotationLock = true;
         enemies[i].moveValue = 1;
+    }
+    for (let i = 0; i < steaks.length; i++) {
+        steaks[i].remove();
+        steaks[i] = new Sprite(initialSteaks[i].x, initialSteaks[i].y, 5, 5, 'dynamic');
+        steaks[i].scale = 1.5;
+        steaks[i].addImage(steakImage);
     }
     lives = lives - 1;
     player.position.x = 500;
@@ -426,6 +512,12 @@ function checkLives() {
         leftWall.remove();
         rightWall.remove();
         player.remove();
+        for (let i = 0; i < steaks.length; i++) {
+            steaks[i].remove();
+        }
+        for (let i = 0; i < firstBricks.length; i++) {
+            firstBricks[i].remove();
+        }
         initialEnemies = [];
         enemies = [];
         poops = [];
@@ -440,4 +532,26 @@ function changeCurrentScreenToLevelOne() {
 
 function changeCurrentScreenToLevelTwo() {
     CURRENTSCREEN = "LEVEL2";
+}
+
+function loadSteaksLevel1() {
+    for (let i = 0; i < gameData.steakLocationsLevel1.length; i++) {
+        let steak = new Sprite(random(6,500),gameData.steakLocationsLevel1[i].y, 5, 5, 'dynamic');
+        steak.image = steakImage;
+        steak.scale = 1.5;
+        initialSteak = steak
+        steaks.push(steak);
+        initialSteaks.push(initialSteak);
+    }
+}
+
+function loadSteaksLevel2() {
+    for (let i = 0; i < gameData.steakLocationsLevel1.length; i++) {
+        let steak = new Sprite(random(6,500),gameData.steakLocationsLevel1[i].y, 5, 5, 'dynamic');
+        steak.image = steakImage;
+        steak.scale = 1.5;
+        initialSteak = steak
+        steaks.push(steak);
+        initialSteaks.push(initialSteak);
+    }
 }
