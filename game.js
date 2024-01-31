@@ -230,7 +230,7 @@ function loadLevelOne() {
             let brickHeight = 20;
             for (let j = 0; j < numberOfBricks; j++) {
                 let brickX = (firstFloor.x / 2) + (j * brickWidth);
-                for (let k = 800; k < 2000; k+=20) {
+                for (let k = 800; k < 1200; k+=20) {
                     let brickY = k;
                     let firstFloorBrick = createBrick(brickX, brickY, brickWidth, brickHeight, 2);
                     firstFloorBrick.addImage(floorImage);
@@ -342,7 +342,7 @@ function loadLevelTwo() {
             let brickHeight = 20;
             for (let j = 0; j < numberOfBricks; j++) {
                 let brickX = (firstFloor.x / 2) + (j * brickWidth);
-                for (let k = 800; k < 2000; k+=20) {
+                for (let k = 800; k < 1200; k+=20) {
                     let brickY = k;
                     let firstFloorBrick = createBrick(brickX, brickY, brickWidth, brickHeight, 2);
                     firstFloorBrick.addImage(floorImage);
