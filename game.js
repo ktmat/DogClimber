@@ -135,7 +135,6 @@ function collisionCheck() {
             dogBoneSprite.remove();
             leftWall.remove();
             rightWall.remove();
-            steaks.remove();
             prevScreen = "LEVEL2";
             CURRENTSCREEN = "SCOREBOARD";
         }
@@ -153,7 +152,25 @@ function collisionCheck() {
             steaks[i].remove();
         }
     }
+
+    // Check for collision of snakes with steaks. 
     for (let i = 0; i < enemies.length; i++) {
+        for (let k = 0; k < steaks.length; k++) {
+            if (enemies[i].collide(steaks[k])) {
+                // Check whether the snake is coming from the left or right
+                // Handle between the two cases.
+                if (enemies[i].x > steaks[k].x) {
+                    enemies[i].moveValue = 1;
+                    enemies[i].mirror.x = false;
+                } else {
+                    enemies[i].moveValue = -1;
+                    enemies[i].mirror.x = true;
+                }
+            }
+        }
+
+        // Check if snake collides with a poop, remove both poop and snake
+        // from their respective arrays.
         for (let j = 0; j < poops.length; j++) {
             if (enemies[i].collide(poops[j])) {
                 enemies[i].remove();
