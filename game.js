@@ -138,6 +138,7 @@ function collisionCheck() {
         }
     }
     if (player.collide(dogBoneSprite) && CURRENTSCREEN == "LEVEL1") {
+        eatSound.play();
         for (let i = 0; i < enemies.length; i++) {
             enemies[i].remove();
         }
@@ -158,6 +159,7 @@ function collisionCheck() {
         }
     }
     if (player.collide(dogBoneSprite) && CURRENTSCREEN == "LEVEL2") {
+        eatSound.play();
         for (let i = 0; i < enemies.length; i++) {
             enemies[i].remove();
         }
