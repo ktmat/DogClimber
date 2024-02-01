@@ -18,12 +18,15 @@ let poops = [];
 let creditTimer = 0;
 let level2Timer = 0;
 let endLevel2Timer = 0;
+let loadingTimer = 0;
 let jumpSound, eatSound, steakImage;
 let steaks = [];
 let firstBricks = [];
 let initialSteaks = [];
 let initialSteak;
 let deathSound;
+let loadingVideo;
+let isVideoInit;
 
 function preload() {
     gameData = loadJSON("gameElements.json");
@@ -47,9 +50,36 @@ function setup() {
     CURRENTSCREEN = "MAINMENU";
     startGameButton = createButton("Start Game");
     startGameButton.position(width / 2, height / 2 + 500);
-    startGameButton.mouseClicked(changeCurrentScreenToLevelOne);
+    startGameButton.mouseClicked(changeCurrentScreenToLoading);
     gameSplash = image(gameLogo, 100, 100);
     world.gravity.y = 5;
+}
+
+function loadingScreen() {
+    background("black");
+    loadingTimer += 0.25;
+    startGameButton.hide();
+    gameSplash = 0;
+    if (!isVideoInit) {
+        loadingVideo = createVideo("assets/video/loading.mp4");
+        loadingVideo.loop();
+        loadingVideo.position(0, 0);
+        isVideoInit = true;
+    }
+    if (loadingTimer >= 50 && !prevScreen) {
+        loadingVideo.remove();
+        loadingTimer = 0;
+        isVideoInit = false;
+        CURRENTSCREEN = "LEVEL1";
+    }
+
+    if (loadingTimer >= 50 && prevScreen == "LEVEL1") {
+        loadingVideo.remove();
+        loadingTimer = 0;
+        isVideoInit = false;
+        CURRENTSCREEN = "LEVEL2";
+    }
+
 }
 
 function draw() {
@@ -75,6 +105,8 @@ function draw() {
         scoreboardScreen();
     } else if (CURRENTSCREEN == "CREDITS") {
         credits();
+    } else if (CURRENTSCREEN == "LOADING") {
+        loadingScreen();
     }
 }
 
@@ -363,13 +395,14 @@ function loadLevelTwo() {
 }
 
 function loadMainMenu() {
+    prevScreen = false;
     isLevel1Init = false;
     isLevel2Init = false;
     level2Timer = 0;
     endLevel2Timer = 0;
     creditTimer = 0;
     startGameButton.show();
-    startGameButton.mouseClicked(loadLevelOne);
+    startGameButton.mouseClicked(changeCurrentScreenToLoading);
     gameSplash = image(gameLogo, 100, 100);
 }
 
@@ -414,7 +447,7 @@ function scoreboardScreen() {
         fill(color('white'));
         text("You beat Level 1, Here is Level 2!", width / 2, height / 2);
         if (level2Timer >= 50) {
-            CURRENTSCREEN = "LEVEL2";
+            CURRENTSCREEN = "LOADING";
         }
     }
     else {
@@ -545,6 +578,10 @@ function checkLives() {
 
 function changeCurrentScreenToLevelOne() {
     CURRENTSCREEN = "LEVEL1";
+}
+
+function changeCurrentScreenToLoading() {
+    CURRENTSCREEN = "LOADING";
 }
 
 function changeCurrentScreenToLevelTwo() {
