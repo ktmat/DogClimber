@@ -389,13 +389,7 @@ function loadLevelOne() {
             enemies.push(enemy);
             initialEnemies.push(initialEnemy);
         }
-
-       /* for (let i = 0; i < gameData.floatingPlatformsLevel1.length; i++) {
-            let floatingPlatformData = gameData.floatingPlatformsLevel1[i];
-            floatingPlatform = createBrick(floatingPlatformData.x, floatingPlatformData.y, 200, 20, 2);
-            floatingPlatform.color = color("blue");
-            floatingPlatforms.push(floatingPlatform);
-        }*/
+        
         loadSteaksLevel1();
         loadChickenLevel1();
         makeMovingPlatforms();
@@ -1066,14 +1060,19 @@ function collisionCheckReplay(state) {
     }
 }
 
+
+// This function loads the replay JSON file using the FileReader JS API.
+
+
 function loadJSONReplayFile(file) {
     if (file.subtype === 'json') { // check if file is json file
         // https://developer.mozilla.org/en-US/docs/Web/API/FileReader
         let reader = new FileReader(); // this is the file reader API in javascript.
+        // The onload event handler is used when the file is finished being read.
         reader.onload = function (event) {
             // JSON.parse converts the JSON string and turns it into an object
             dataToConvert = JSON.parse(event.target.result);
-            convertData(dataToConvert);
+           // convertData(dataToConvert);
             //console.log(JSONReplayData);
         };
         reader.readAsText(file.file);
