@@ -155,9 +155,6 @@ function draw() {
         movePlatforms();
     } else if (CURRENTSCREEN == "LEVEL2") {
         loadLevelTwo();
-        if (userWantsReplay) {
-            getGameState();
-        }
         enemyMovement();
         handleInput();
         camera.y = player.y;
@@ -389,7 +386,7 @@ function loadLevelOne() {
             enemies.push(enemy);
             initialEnemies.push(initialEnemy);
         }
-        
+
         loadSteaksLevel1();
         loadChickenLevel1();
         makeMovingPlatforms();
@@ -508,6 +505,7 @@ function loadMainMenu() {
     if (!userWantsReplay) {
         wantReplayButton.show();
     }
+    replayButton.show();
     gameSplash = image(gameLogo, 100, 100);
 }
 
@@ -765,6 +763,19 @@ function makePlayer() {
 }
 
 function getGameState() {
+
+    // This is quite literally the only way I could figure out
+    // a somewhat functioning replay system.
+
+    // What the getGameState function does is essentially index 
+    // information regarding every single sprite on every single frame
+    // this means, I'd have to account for every little thing that a sprite
+    // does. Given the time I had working on this, I was unable to perfect
+    // the replay system. But it somewhat works :)
+    //
+    // it is stored as an object of arrays of objects.
+    // This made me hate javascript.
+
     let state = {
         player: {
             x: player.position.x,
@@ -828,6 +839,11 @@ function replay() {
     background('grey');
     startReplay();
     // My JSONReplayData variable is an Object! not an array!
+    // https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Object/keys
+    // This gives an array of the property names within the object.
+    // So like, player, enemies, etc.
+    // I then get the length of these said keys. Of which I can index over
+    // to create a sort of frame based replay system.
     count = Object.keys(JSONReplayData).length;
     if (replayIndex < count) {
         recreateGameState(JSONReplayData[replayIndex]);
@@ -1062,7 +1078,6 @@ function collisionCheckReplay(state) {
 
 
 // This function loads the replay JSON file using the FileReader JS API.
-
 
 function loadJSONReplayFile(file) {
     if (file.subtype === 'json') { // check if file is json file
