@@ -25,6 +25,16 @@
         {"x": 0, "y": 100},
         {"x": 0, "y": 0}
     ],
+    "floatingPlatformsLevel1": [
+        {"x": 250, "y": -100},
+        {"x": 750, "y": -100},
+        {"x": 500, "y": -200}
+    ],
+    "floatingPlatformsLevel2": [
+        {"x": 250, "y": -100},
+        {"x": 750, "y": -100},
+        {"x": 500, "y": -200}
+    ],
     "level1Enemies": [
         {"x": 900, "y": 630},
         {"x": 500, "y": 430},
@@ -47,6 +57,16 @@
         {"y": 75}
     ],
     "steakLocationsLevel2": [
+        {"y": 675},
+        {"y": 475}
+    ],
+    "chickenLocationsLevel1": [
+        {"y": 675},
+        {"y": 475},
+        {"y": 275},
+        {"y": 75}
+    ],
+    "chickenLocationsLevel2": [
         {"y": 675},
         {"y": 475}
     ]

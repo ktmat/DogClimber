@@ -37,6 +37,22 @@ let count;
 let isWallInit = false;
 let isBricksInit = false;
 let replayButton;
+let uploadReplay;
+let replayUploadButtonInit = false;
+let dataToConvert;
+let chickenImage;
+let chicken;
+let chickens = [];
+let initialChickens = [];
+let initialChicken;
+let chickenScore = 0;
+let lifeImage;
+let lifeSprite;
+let hasLevelReset;
+let initReplayLevel = false;
+/*let floatingPlatform;
+let floatingPlatforms = [];
+*/
 
 function preload() {
     gameData = loadJSON("gameElements.json");
@@ -53,7 +69,8 @@ function preload() {
     eatSound = loadSound("assets/sounds/eat.wav");
     deathSound = loadSound("assets/sounds/death.wav");
     snakeDeathSound = loadSound("assets/sounds/snakedeath.wav");
-    JSONReplayData = loadJSON("assets/replays/replay.json");
+    chickenImage = loadImage("assets/sprites/chicken.png");
+    lifeImage = loadImage("assets/sprites/life.png");
 }
 
 function setup() {
@@ -70,7 +87,20 @@ function setup() {
     world.gravity.y = 5;
 }
 
+function uploadReplayScreen() {
+    if (!replayUploadButtonInit) {
+        startGameButton.hide();
+        allSprites.remove();
+        background('black');
+        uploadReplay = createFileInput(loadJSONReplayFile);
+        uploadReplay.position(width / 2, height / 2);
+        replayUploadButtonInit = true;
+        replayButton.hide();
+    }
+}
+
 function loadingScreen() {
+    replayButton.hide();
     background("black");
     loadingTimer += 0.25;
     startGameButton.hide();
@@ -99,7 +129,8 @@ function loadingScreen() {
 }
 
 function draw() {
-    console.log(CURRENTSCREEN);
+    //console.log(CURRENTSCREEN);
+	//console.log(allSprites);
     if (CURRENTSCREEN == "MAINMENU") {
         loadMainMenu();
     } else if (CURRENTSCREEN == "LEVEL1") {
@@ -131,7 +162,8 @@ function draw() {
         loadingScreen();
     } else if (CURRENTSCREEN == "REPLAY") {
         replay();
-        camera.y = player.y;
+    } else if (CURRENTSCREEN == "UPLOAD") {
+        uploadReplayScreen();
     }
 }
 
@@ -151,6 +183,13 @@ function collisionCheck() {
             player.isJumping = false;
         }
     }
+/*
+    for (let i = 0; i < floatingPlatforms.length; i++) {
+        if (player.collide(floatingPlatforms[i]) && player.position.y <= floatingPlatforms[i].position.y) {
+            player.isJumping = false;
+        }
+    }*/
+
     for (let i = 0; i < firstBricks.length; i++) {
         if (player.collide(firstBricks[i]) && player.position.y <= firstBricks[i].position.y) {
             player.isJumping = false;
@@ -186,6 +225,9 @@ function collisionCheck() {
             prevScreen = "LEVEL1";
             CURRENTSCREEN = "SCOREBOARD";
         }
+        for (let i = 0; i < chickens.length; i++) {
+            chickens[i].remove();
+        }
         for (let i = 0; i < steaks.length; i++) {
             steaks[i].remove();
         }
@@ -210,6 +252,9 @@ function collisionCheck() {
             prevScreen = "LEVEL2";
             CURRENTSCREEN = "SCOREBOARD";
         }
+        for (let i = 0; i < chickens.length; i++) {
+            chickens[i].remove();
+        }
         for (let i = 0; i < steaks.length; i++) {
             steaks[i].remove();
         }
@@ -224,6 +269,13 @@ function collisionCheck() {
             steaks[i].remove();
         }
     }
+    for (let i = 0; i < chickens.length; i++) {
+        if (player.collide(chickens[i])) {
+            eatSound.play();
+            chickenScore++;
+            chickens[i].remove();
+        }
+    }
 
     // Check for collision of snakes with steaks. 
     for (let i = 0; i < enemies.length; i++) {
@@ -232,6 +284,17 @@ function collisionCheck() {
                 // Check whether the snake is coming from the left or right
                 // Handle between the two cases.
                 if (enemies[i].x > steaks[k].x) {
+                    enemies[i].moveValue = 1;
+                    enemies[i].mirror.x = false;
+                } else {
+                    enemies[i].moveValue = -1;
+                    enemies[i].mirror.x = true;
+                }
+            }
+        }
+        for (let k = 0; k < chickens.length; k++) {
+            if (enemies[i].collide(chickens[k])) {
+                if (enemies[i].x > chickens[k].x) {
                     enemies[i].moveValue = 1;
                     enemies[i].mirror.x = false;
                 } else {
@@ -319,7 +382,15 @@ function loadLevelOne() {
             enemies.push(enemy);
             initialEnemies.push(initialEnemy);
         }
+
+       /* for (let i = 0; i < gameData.floatingPlatformsLevel1.length; i++) {
+            let floatingPlatformData = gameData.floatingPlatformsLevel1[i];
+            floatingPlatform = createBrick(floatingPlatformData.x, floatingPlatformData.y, 200, 20, 2);
+            floatingPlatform.color = color("blue");
+            floatingPlatforms.push(floatingPlatform);
+        }*/
         loadSteaksLevel1();
+        loadChickenLevel1();
         leftWall = new Sprite(5, height / 2, 10, height + 1200, 'static');
         leftWall.color = "grey";
         rightWall = new Sprite(width, height / 2, 20, height + 1200, 'static');
@@ -337,6 +408,12 @@ function loadLevelTwo() {
     prevScreen = "LEVEL2";
    // startGameButton.hide();
     if (!isLevel2Init) {
+        initialEnemies = [];
+        enemies = [];
+        chickens = [];
+        poops = [];
+        steaks = [];
+        firstBricks = [];
         makePlayer();
         bricks = [];
         for (let i = 0; i < gameData.platformsLevel2.length; i++) {
@@ -398,6 +475,7 @@ function loadLevelTwo() {
             }
         }
         loadSteaksLevel2();
+        loadChickenLevel2();
         leftWall = new Sprite(5, height / 2, 10, height + 1200, 'static');
         leftWall.color = "grey";
         rightWall = new Sprite(width, height / 2, 20, height + 1200, 'static');
@@ -410,6 +488,12 @@ function loadLevelTwo() {
 }
 
 function loadMainMenu() {
+    enemies = [];
+    chickens = [];
+    poops = [];
+    steaks = [];
+    bricks = [];
+    initialEnemies = [];
     prevScreen = false;
     isLevel1Init = false;
     isLevel2Init = false;
@@ -461,6 +545,9 @@ function scoreboardScreen() {
         background('black');
         fill(color('white'));
         text("You beat Level 1, Here is Level 2!", width / 2, height / 2);
+        text("Chicken Score: "+chickenScore, width / 2, height / 2 + 200);
+        lifeSprite = image(lifeImage, width / 2, 400);
+        text(lives, (width / 2) + 30, 410);
         if (level2Timer >= 50) {
             CURRENTSCREEN = "LOADING";
         }
@@ -470,6 +557,9 @@ function scoreboardScreen() {
         background('black');
         fill(color('white'));
         text("You beat Level 2!", width / 2, height / 2);
+        text("Chicken Score: "+chickenScore, width / 2, height / 2 + 200);
+        lifeSprite = image(lifeImage, width / 2, 400);
+        text(lives, (width / 2) + 30, 410);
         if (endLevel2Timer >= 50) {
             CURRENTSCREEN = "CREDITS";
         }
@@ -478,6 +568,7 @@ function scoreboardScreen() {
 }
 
 function resetLevel() {
+    hasLevelReset = true;
     for (let i = 0; i < bricks.length; i++) {
         bricks[i].remove();
         bricks[i] = createBrick(bricks[i].initialX, bricks[i].initialY, bricks[i].initialWidth, bricks[i].initialHeight, bricks[i].isUnbreakable);
@@ -526,6 +617,14 @@ function resetLevel() {
         steaks[i].scale = 1.5;
         steaks[i].addImage(steakImage);
     }
+    for (let i = 0; i < chickens.length; i++) {
+        chickens[i].remove();
+        chickens[i] = new Sprite(initialChickens[i].x, initialChickens[i].y, 5, 5, 'dynamic');
+        chickens[i].scale = 1.5;
+        chickens[i].addImage(chickenImage);
+    }
+
+    chickenScore = 0;
     lives = lives - 1;
     player.position.x = 500;
     player.position.y = 750;
@@ -587,10 +686,15 @@ function checkLives() {
         for (let i = 0; i < firstBricks.length; i++) {
             firstBricks[i].remove();
         }
+        for (let i = 0; i < chickens.length; i++) {
+            chickens[i].remove();
+        }
         initialEnemies = [];
         enemies = [];
         poops = [];
+        initialChickens = [];
         background('black');
+
         CURRENTSCREEN = "MAINMENU";
     }
 }
@@ -608,7 +712,7 @@ function changeCurrentScreenToLevelTwo() {
 }
 
 function changeCurrentScreenToReplay() {
-    CURRENTSCREEN = "REPLAY";
+    CURRENTSCREEN = "UPLOAD";
 }
 
 function loadSteaksLevel1() {
@@ -660,9 +764,13 @@ function getGameState() {
         enemies: [],
         steaks: [],
         poops: [],
-        bricks: []
+        bricks: [],
+        chickens: [],
+        levelReset: false
     };
-
+    if (hasLevelReset) {
+        state.levelReset = true;
+    }
     for (let i = 0; i < bricks.length; i++) {
         state.bricks.push({
             x: bricks[i].position.x,
@@ -691,18 +799,19 @@ function getGameState() {
             y: poops[i].position.y
         });
     }
+
+    for (let i = 0; i < chickens.length; i++) {
+        state.chickens.push({
+            x: chickens[i].position.x,
+            y: chickens[i].position.y
+        });
+    }
     replayData.push(state);
 }
 
 function saveReplayToJSON() {
     saveJSON(replayData, "replay.json");
 }
-
-function replayLoadScreen() {
-    background('black');
-
-}
-
 
 function replay() {
     replayButton.hide();
@@ -713,12 +822,8 @@ function replay() {
     count = Object.keys(JSONReplayData).length;
     if (replayIndex < count) {
         recreateGameState(JSONReplayData[replayIndex]);
-    } else {
-        isReplaying = false;
-        //background("black");
-        //allSprites.remove();
-        //CURRENTSCREEN = "MAINMENU";
-    }
+        isReplayInit = false;
+    } 
 }
 
 function startReplay() {
@@ -730,29 +835,27 @@ function startReplay() {
 function recreateGameState(state) {
     for (let i = 0; i < state.bricks.length; i++) {
         if (bricks[i]) {
-            bricks[i].position.x = state.bricks[i].x;
-            bricks[i].position.y = state.bricks[i].y;
-            bricks[i].isUnbreakable = state.bricks[i].isUnbreakable;
-            collisionCheckReplay();
+			bricks[i].position.x = state.bricks[i].x;
+			bricks[i].position.y = state.bricks[i].y;
+			bricks[i].isUnbreakable = state.bricks[i].isUnbreakable;
         } else {
             let numberOfBricks = 50;
             let brickWidth = width / numberOfBricks;
             let brickHeight = 20;
-            let brick = createBrick(state.bricks[i].x, state.bricks[i].y, brickWidth, brickHeight, 'static');
-            brick.index = i;
+            bricks[i] = createBrick(state.bricks[i].x, state.bricks[i].y, brickWidth, brickHeight, 'static');
+            //brick.index = i;
             if (state.bricks[i].isUnbreakable == 1) {
-                brick.addImage(brickUnbreak);
+                bricks[i].addImage(brickUnbreak);
             } else {
-                brick.addImage(brickImage);
+                bricks[i].addImage(brickImage);
             }
-            bricks.push(brick);
         }
     }
     for (let i = 0; i < state.enemies.length; i++) {
         if (enemies[i]) {
             enemies[i].position.x = state.enemies[i].x;
             enemies[i].position.y = state.enemies[i].y;
-            
+            collisionCheckReplay(state);
         } else {
             let enemy = new Sprite(state.enemies[i].x, state.enemies[i].y, 80, 40, 'dynamic');
             enemy.spriteSheet = snakeImage;
@@ -779,6 +882,18 @@ function recreateGameState(state) {
             steak.image = steakImage;
             steak.scale = 1.5;
             steaks.push(steak);
+        }
+    }
+
+    for (let i = 0; i < state.chickens.length; i++) {
+        if (chickens[i]) {
+            chickens[i].position.x = state.chickens[i].x;
+            chickens[i].position.y = state.chickens[i].y;
+        } else {
+            let chicken = new Sprite(state.chickens[i].x, state.chickens[i].y, 5, 5, 'dynamic');
+            chicken.image = chickenImage;
+            chicken.scale = 1.5;
+            chickens.push(chicken);
         }
     }
 
@@ -814,6 +929,7 @@ function recreateGameState(state) {
     }
     player.position.x = state.player.x;
     player.position.y = state.player.y;
+    camera.y = player.y;
     for (let i = 0; i < state.poops.length; i++) {
         if (poops[i]) {
             poops[i].position.x = state.poops[i].x;
@@ -828,7 +944,7 @@ function recreateGameState(state) {
 }
 
 
-function collisionCheckReplay() {
+function collisionCheckReplay(state) {
     // Check if player hits a brick from below.
     for (let i = 0; i < bricks.length; i++) {
         if (player.collide(bricks[i])) {
@@ -844,14 +960,11 @@ function collisionCheckReplay() {
     for (let i = 0; i < enemies.length; i++) {
         if (player.collide(enemies[i])) {
             deathSound.play();
-            //resetLevel();
+            resetLevelReplay(state);
         }
     }
-    if (player.collide(dogBoneSprite) && CURRENTSCREEN == "LEVEL1") {
+    if (player.collide(dogBoneSprite) && CURRENTSCREEN == "REPLAY") {
         eatSound.play();
-        if (userWantsReplay) {
-            saveReplayToJSON();
-        }
         for (let i = 0; i < enemies.length; i++) {
             enemies[i].remove();
         }
@@ -861,9 +974,11 @@ function collisionCheckReplay() {
             dogBoneSprite.remove();
             leftWall.remove();
             rightWall.remove();
-            prevScreen = "LEVEL1";
-            CURRENTSCREEN = "SCOREBOARD";
         }
+        for (let i = 0; i < chickens.length; i++) {
+            chickens[i].remove();
+        }
+        //allSprites.remove();
         for (let i = 0; i < steaks.length; i++) {
             steaks[i].remove();
         }
@@ -873,34 +988,9 @@ function collisionCheckReplay() {
         for (let i = 0; i < poops.length; i++) {
             poops[i].remove();
         }
-    }
-    if (player.collide(dogBoneSprite) && CURRENTSCREEN == "LEVEL2") {
-        eatSound.play();
-        for (let i = 0; i < enemies.length; i++) {
-            enemies[i].remove();
-        }
-        for (let i = 0; i < bricks.length; i++) {
-            bricks[i].remove();
-            player.remove();
-            dogBoneSprite.remove();
-            leftWall.remove();
-            rightWall.remove();
-            prevScreen = "LEVEL2";
-            CURRENTSCREEN = "SCOREBOARD";
-        }
-        for (let i = 0; i < steaks.length; i++) {
-            steaks[i].remove();
-        }
-        for (let i = 0; i < firstBricks.length; i++) {
-            firstBricks[i].remove();
-        }
-    }
-    for (let i = 0; i < steaks.length; i++) {
-        if (player.collide(steaks[i])) {
-            eatSound.play();
-            canAttack += 1;
-            steaks[i].remove();
-        }
+        replayButton.show();
+        background('black');
+        CURRENTSCREEN = "MAINMENU";
     }
 
     // Check for collision of snakes with steaks. 
@@ -910,6 +1000,17 @@ function collisionCheckReplay() {
                 // Check whether the snake is coming from the left or right
                 // Handle between the two cases.
                 if (enemies[i].x > steaks[k].x) {
+                    enemies[i].moveValue = 1;
+                    enemies[i].mirror.x = false;
+                } else {
+                    enemies[i].moveValue = -1;
+                    enemies[i].mirror.x = true;
+                }
+            }
+        }
+        for (let k = 0; k < chickens.length; k++) {
+            if (enemies[i].collide(chickens[k])) {
+                if (enemies[i].x > chickens[k].x) {
                     enemies[i].moveValue = 1;
                     enemies[i].mirror.x = false;
                 } else {
@@ -929,4 +1030,129 @@ function collisionCheckReplay() {
             }
         }
     }
+    
+    for (let i = 0; i < steaks.length; i++) {
+        if (player.collide(steaks[i])) {
+            eatSound.play();
+            steaks[i].remove();
+        }
+    }
+
+    for (let i = 0; i < chickens.length; i++) {
+        if (player.collide(chickens[i])) {
+            eatSound.play();
+            chickens[i].remove();
+        }
+    }
+}
+
+function loadJSONReplayFile(file) {
+    if (file.subtype === 'json') { // check if file is json file
+        // https://developer.mozilla.org/en-US/docs/Web/API/FileReader
+        let reader = new FileReader(); // this is the file reader API in javascript.
+        reader.onload = function (event) {
+            // JSON.parse converts the JSON string and turns it into an object
+            dataToConvert = JSON.parse(event.target.result);
+            convertData(dataToConvert);
+            //console.log(JSONReplayData);
+        };
+        reader.readAsText(file.file);
+        uploadReplay.hide();
+        CURRENTSCREEN = "REPLAY";
+    } else {
+        console.error('Not a valid JSON file!');
+    }
+}
+
+
+// The convertData function takes in an input array, and converts it 
+// into an object. Where I can index through it frame by frame.
+
+// The map function turns the array elements in data into a key pair of index and item.
+// The fromEntries function then turns the result into an object of which I can use.
+function convertData(data) {
+    // https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Object/fromEntries
+    JSONReplayData = Object.fromEntries(data.map((item, index) => [index, item]));
+}
+
+function loadChickenLevel1() {
+    for (let i = 0; i < gameData.chickenLocationsLevel1.length; i++) {
+        let chicken = new Sprite(random(6,500),gameData.chickenLocationsLevel1[i].y, 5, 5, 'dynamic');
+        chicken.image = chickenImage;
+        chicken.scale = 1.5;
+        initialChicken = chicken
+        chickens.push(chicken);
+        initialChickens.push(initialChicken);
+    }
+}
+
+function loadChickenLevel2() {
+    for (let i = 0; i < gameData.chickenLocationsLevel2.length; i++) {
+        let chicken = new Sprite(random(6,500),gameData.chickenLocationsLevel2[i].y, 5, 5, 'dynamic');
+        chicken.image = chickenImage;
+        chicken.scale = 1.5;
+        initialChicken = chicken
+        chickens.push(chicken);
+        initialChickens.push(initialChicken);
+    }
+}
+
+function resetLevelReplay(state) {
+    if (!initReplayLevel) {
+        for (let i = 0; i < state.bricks.length; i++) {
+            bricks[i].remove();
+            let numberOfBricks = 50;
+            let brickWidth = width / numberOfBricks;
+            let brickHeight = 20;
+            bricks[i] = createBrick(state.bricks[i].x, state.bricks[i].y, brickWidth, brickHeight, state.bricks[i].isUnbreakable);
+            if (bricks[i].isUnbreakable == 1) {
+                bricks[i].addImage(brickUnbreak);
+            } else {
+                bricks[i].addImage(brickImage);
+            }
+            //bricks[i].position.x = state.bricks[i].x;
+            //bricks[i].position.y = state.bricks[i].y;
+            //bricks[i].isUnbreakable = state.bricks[i].isUnbreakable;
+        }
+        for (let j = 0; j < poops.length; j++) {
+            poops[j].remove();
+        }
+        leftWall.remove();
+        rightWall.remove();
+        dogBoneSprite.remove();
+        dogBoneSprite = new Sprite(500, -20, 'static');
+        dogBoneSprite.addImage(dogBone);
+        dogBoneSprite.scale = 1;
+        leftWall = new Sprite(5, height / 2, 10, height + 1200, 'static');
+        leftWall.color = "grey";
+        rightWall = new Sprite(width, height / 2, 20, height + 1200, 'static');
+        rightWall.color = "grey";
+    
+        for (let i = 0; i < state.enemies.length; i++) {
+            enemies[i].remove();
+            enemies[i] = new Sprite(state.enemies[i].x, state.enemies[i].y, 80, 40, 'dynamic');
+            enemies[i].spriteSheet = snakeImage;
+            enemies[i].anis.offset.x = 1;
+            enemies[i].debug = true;
+            enemies[i].addAnis({
+                walk: {row: 3, frames: 4}
+            });
+            enemies[i].changeAni('walk');
+            enemies[i].rotationLock = true;
+            enemies[i].moveValue = 1;
+        }
+        for (let i = 0; i < state.steaks.length; i++) {
+            steaks[i].remove();
+            steaks[i] = new Sprite(state.steaks[i].x, state.steaks[i].y, 5, 5, 'dynamic');
+            steaks[i].scale = 1.5;
+            steaks[i].addImage(steakImage);
+        }
+        for (let i = 0; i < state.chickens.length; i++) {
+            chickens[i].remove();
+            chickens[i] = new Sprite(state.chickens[i].x, state.chickens[i].y, 5, 5, 'dynamic');
+            chickens[i].scale = 1.5;
+            chickens[i].addImage(chickenImage);
+        }
+        initReplayLevel = true;
+    }  
 }
