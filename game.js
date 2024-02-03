@@ -50,9 +50,12 @@ let lifeImage;
 let lifeSprite;
 let hasLevelReset;
 let initReplayLevel = false;
-/*let floatingPlatform;
-let floatingPlatforms = [];
-*/
+let leftPlatform;
+let rightPlatform;
+let middlePlatform;
+let platformMoveCount = 0;
+let platformMoveCount2 = 0;
+let wantReplayButton;
 
 function preload() {
     gameData = loadJSON("gameElements.json");
@@ -84,11 +87,15 @@ function setup() {
     replayButton.position(width / 2, height / 2 + 400);
     replayButton.mouseClicked(changeCurrentScreenToReplay);
     gameSplash = image(gameLogo, 100, 100);
+    wantReplayButton = createButton("Want Replay for Level 1?");
+    wantReplayButton.position(width / 2 + 200, height / 2 + 400);
+    wantReplayButton.mouseClicked(enableReplayForLevel1);
     world.gravity.y = 5;
 }
 
 function uploadReplayScreen() {
     if (!replayUploadButtonInit) {
+        wantReplayButton.hide();
         startGameButton.hide();
         allSprites.remove();
         background('black');
@@ -100,6 +107,7 @@ function uploadReplayScreen() {
 }
 
 function loadingScreen() {
+    wantReplayButton.hide();
     replayButton.hide();
     background("black");
     loadingTimer += 0.25;
@@ -144,6 +152,7 @@ function draw() {
         camera.y = player.y;
         collisionCheck();
         checkLives();
+        movePlatforms();
     } else if (CURRENTSCREEN == "LEVEL2") {
         loadLevelTwo();
         if (userWantsReplay) {
@@ -154,6 +163,7 @@ function draw() {
         camera.y = player.y;
         collisionCheck();
         checkLives();
+        movePlatforms();
     } else if (CURRENTSCREEN == "SCOREBOARD") {
         scoreboardScreen();
     } else if (CURRENTSCREEN == "CREDITS") {
@@ -183,12 +193,9 @@ function collisionCheck() {
             player.isJumping = false;
         }
     }
-/*
-    for (let i = 0; i < floatingPlatforms.length; i++) {
-        if (player.collide(floatingPlatforms[i]) && player.position.y <= floatingPlatforms[i].position.y) {
-            player.isJumping = false;
-        }
-    }*/
+    if (player.collide(rightPlatform) || player.collide(leftPlatform) || player.collide(middlePlatform)) {
+        player.isJumping = false;
+    }
 
     for (let i = 0; i < firstBricks.length; i++) {
         if (player.collide(firstBricks[i]) && player.position.y <= firstBricks[i].position.y) {
@@ -391,11 +398,12 @@ function loadLevelOne() {
         }*/
         loadSteaksLevel1();
         loadChickenLevel1();
+        makeMovingPlatforms();
         leftWall = new Sprite(5, height / 2, 10, height + 1200, 'static');
         leftWall.color = "grey";
         rightWall = new Sprite(width, height / 2, 20, height + 1200, 'static');
         rightWall.color = "grey";
-        dogBoneSprite = new Sprite(500, -20, 'static');
+        dogBoneSprite = new Sprite(middlePlatform.position.x, middlePlatform.position.y - 20, 'static');
         dogBoneSprite.addImage(dogBone);
         dogBoneSprite.scale = 1;
         isLevel1Init = true;
@@ -476,11 +484,12 @@ function loadLevelTwo() {
         }
         loadSteaksLevel2();
         loadChickenLevel2();
+        makeMovingPlatforms();
         leftWall = new Sprite(5, height / 2, 10, height + 1200, 'static');
         leftWall.color = "grey";
         rightWall = new Sprite(width, height / 2, 20, height + 1200, 'static');
         rightWall.color = "grey";
-        dogBoneSprite = new Sprite(500, -20, 'static');
+        dogBoneSprite = new Sprite(middlePlatform.position.x, middlePlatform.position.y - 20, 'static');
         dogBoneSprite.addImage(dogBone);
         dogBoneSprite.scale = 1;
         isLevel2Init = true;
@@ -502,6 +511,9 @@ function loadMainMenu() {
     creditTimer = 0;
     startGameButton.show();
     startGameButton.mouseClicked(changeCurrentScreenToLoading);
+    if (!userWantsReplay) {
+        wantReplayButton.show();
+    }
     gameSplash = image(gameLogo, 100, 100);
 }
 
@@ -540,6 +552,7 @@ function createBrick(x, y, width, height, isUnbreakable) {
 }
 
 function scoreboardScreen() {
+    removePlatforms();
     if (prevScreen == "LEVEL1") {
         level2Timer += 0.25;
         background('black');
@@ -589,8 +602,10 @@ function resetLevel() {
     }
     leftWall.remove();
     rightWall.remove();
+    removePlatforms();
+    makeMovingPlatforms();
     dogBoneSprite.remove();
-    dogBoneSprite = new Sprite(500, -20, 'static');
+    dogBoneSprite = new Sprite(middlePlatform.position.x, middlePlatform.position.y - 20, 'static');
     dogBoneSprite.addImage(dogBone);
     dogBoneSprite.scale = 1;
     leftWall = new Sprite(5, height / 2, 10, height + 1200, 'static');
@@ -899,10 +914,6 @@ function recreateGameState(state) {
 
     
     if (!isWallInit) {
-
-        dogBoneSprite = new Sprite(500, -20, 'static');
-        dogBoneSprite.addImage(dogBone);
-        dogBoneSprite.scale = 1;
         for (let i = 0; i < gameData.firstPlatformLevel1.length; i++) {
             firstFloor = gameData.firstPlatformLevel1[i];
     
@@ -924,9 +935,14 @@ function recreateGameState(state) {
         rightWall = new Sprite(width, height / 2, 20, height + 1200, 'static');
         rightWall.color = "grey";
         makePlayer();
+        makeMovingPlatforms();
+        dogBoneSprite = new Sprite(middlePlatform.position.x, middlePlatform.position.y - 20, 'static');
+        dogBoneSprite.addImage(dogBone);
+        dogBoneSprite.scale = 1;
         collisionCheck();
         isWallInit = true;
     }
+    movePlatforms();
     player.position.x = state.player.x;
     player.position.y = state.player.y;
     camera.y = player.y;
@@ -963,6 +979,9 @@ function collisionCheckReplay(state) {
             resetLevelReplay(state);
         }
     }
+
+    
+
     if (player.collide(dogBoneSprite) && CURRENTSCREEN == "REPLAY") {
         eatSound.play();
         for (let i = 0; i < enemies.length; i++) {
@@ -988,6 +1007,7 @@ function collisionCheckReplay(state) {
         for (let i = 0; i < poops.length; i++) {
             poops[i].remove();
         }
+        removePlatforms();
         replayButton.show();
         background('black');
         CURRENTSCREEN = "MAINMENU";
@@ -1110,17 +1130,16 @@ function resetLevelReplay(state) {
             } else {
                 bricks[i].addImage(brickImage);
             }
-            //bricks[i].position.x = state.bricks[i].x;
-            //bricks[i].position.y = state.bricks[i].y;
-            //bricks[i].isUnbreakable = state.bricks[i].isUnbreakable;
         }
         for (let j = 0; j < poops.length; j++) {
             poops[j].remove();
         }
         leftWall.remove();
         rightWall.remove();
+        removePlatforms();
+        makeMovingPlatforms();
         dogBoneSprite.remove();
-        dogBoneSprite = new Sprite(500, -20, 'static');
+        dogBoneSprite = new Sprite(middlePlatform.position.x, middlePlatform.position.y - 20, 'static');
         dogBoneSprite.addImage(dogBone);
         dogBoneSprite.scale = 1;
         leftWall = new Sprite(5, height / 2, 10, height + 1200, 'static');
@@ -1155,4 +1174,47 @@ function resetLevelReplay(state) {
         }
         initReplayLevel = true;
     }  
+}
+
+function makeMovingPlatforms() {
+    leftPlatform = new Sprite(250, -100, 100, 20, 'static');
+    leftPlatform.color = color("blue");
+    rightPlatform = new Sprite(750, -100, 100, 20, 'static');
+    rightPlatform.color = color("blue");
+    middlePlatform = new Sprite(500, -200, 100, 20, 'static');
+    middlePlatform.color = color("gold");
+}
+
+function movePlatforms() {
+    platformMoveCount += 0.5;
+    platformMoveCount2 += 0.5;
+    if (platformMoveCount >= 50) {
+        if (leftPlatform.position.x == 250) {
+            leftPlatform.position.x = 350;
+            platformMoveCount = 0;
+        } else if (leftPlatform.position.x == 350) {
+            leftPlatform.position.x = 250;
+            platformMoveCount = 0;
+        }
+    }
+    if (platformMoveCount2 >= 50) {
+        if (rightPlatform.position.x == 750) {
+            rightPlatform.position.x = 650;
+            platformMoveCount2 = 0;
+        } else if (rightPlatform.position.x == 650) {
+            rightPlatform.position.x = 750;
+            platformMoveCount2 = 0;
+        }
+    }
+}
+
+function removePlatforms() {
+    leftPlatform.remove();
+    rightPlatform.remove();
+    middlePlatform.remove();
+}
+
+function enableReplayForLevel1() {
+    userWantsReplay = true;
+    wantReplayButton.hide();
 }
